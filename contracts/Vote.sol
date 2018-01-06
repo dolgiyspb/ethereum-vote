@@ -10,7 +10,7 @@ contract Vote {
         bool voted;
     }
 
-    address owner;
+    address public owner;
 
     mapping(address => Voter) voters;
     Candidate[3] candidates;

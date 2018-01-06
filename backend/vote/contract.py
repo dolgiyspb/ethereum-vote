@@ -37,6 +37,9 @@ class VoteContractManager:
             for contract in create_vote_contract_repo().all()
         ]
 
+    def load(self, address):
+        db_model = create_vote_contract_repo().get(address=address)
+        return VoteContract(address=db_model.address, contract_definition=self.contract_definition)
 
 class VoteContract:
 
@@ -48,6 +51,7 @@ class VoteContract:
     def candidates(self):
         return self.contract_definition.call({'to': self.address}).Candidates()
 
+    @property
     def results(self):
         first, second = self.candidates
         for_first, for_second, against_all = self.contract_definition.call({'to': self.address}).GetResults()
@@ -57,6 +61,10 @@ class VoteContract:
                 (first, for_first), (second, for_second), ('against_all', against_all)
             )
         ]
+
+    @property
+    def owner(self):
+        return self.contract_definition.call({'to': self.address}).owner()
 
     def vote_for(self, candidate_index, key):
         return self._make_signed_call('VoteFor', key, candidate_index)
@@ -83,12 +91,6 @@ def create_vote_contract_definition():
     contract_interface = compiled_sol['<stdin>:Vote']
     return web3.eth.contract(abi=contract_interface['abi'], bytecode=contract_interface['bin'])
 
-
-def create_vote_contract(address):
-    return VoteContract(
-        address=address,
-        contract_definition=create_vote_contract_definition()
-    )
 
 def create_vote_contract_manager():
     return VoteContractManager(create_vote_contract_definition())

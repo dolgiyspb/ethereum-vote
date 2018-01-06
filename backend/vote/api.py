@@ -2,7 +2,7 @@ from flask_restful import Resource, reqparse
 from http import HTTPStatus
 
 from vote import api_manager
-from vote.contract import create_vote_contract, create_vote_contract_manager
+from vote.contract import create_vote_contract_manager
 
 key_reqraser = reqparse.RequestParser()
 key_reqraser.add_argument('key', required=True)
@@ -36,16 +36,21 @@ class Votes(Resource):
 @api_manager.resource('/votes/<string:contract_address>')
 class Vote(Resource):
     def get(self, contract_address):
-        return create_vote_contract(address=contract_address).results()
+        contract = create_vote_contract_manager().load(address=contract_address)
+        return {
+            'results': contract.results,
+            'owner': contract.owner
+        }
 
     def delete(self, contract_address):
-        create_vote_contract(address=contract_address).close(key=key_reqraser.parse_args()['key'])
+        create_vote_contract_manager().load(address=contract_address).close(key=key_reqraser.parse_args()['key'])
         return '', HTTPStatus.NO_CONTENT
+
 
 @api_manager.resource('/votes/<string:contract_address>/vote-for')
 class VoteFor(Resource):
     def post(self, contract_address):
         args = vote_for_reqparser.parse_args()
-        create_vote_contract(address=contract_address).vote_for(
+        create_vote_contract_manager().load(address=contract_address).vote_for(
             candidate_index=args['candidate_index'], key=args['key']
         )
