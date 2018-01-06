@@ -1,8 +1,7 @@
 from flask_restful import Resource, reqparse
 
-from vote import api_manager, web3
+from vote import api_manager
 from vote.contract import deploy_vote_contract, create_vote_contract
-
 
 votes_reqparser = reqparse.RequestParser()
 votes_reqparser.add_argument('names', required=True, action='append')
@@ -10,9 +9,7 @@ votes_reqparser.add_argument('key', required=True)
 
 vote_for_reqparser = reqparse.RequestParser()
 vote_for_reqparser.add_argument('candidate_index', type=int, required=True)
-vote_for_reqparser.add_argument('from', required=True)
-vote_for_reqparser.add_argument('passphrase')
-vote_for_reqparser.add_argument('key')
+vote_for_reqparser.add_argument('key', required=True)
 
 
 @api_manager.resource('/votes')
@@ -34,6 +31,5 @@ class VoteFor(Resource):
     def post(self, contract_address):
         args = vote_for_reqparser.parse_args()
         create_vote_contract(address=contract_address).vote_for(
-            candidate_index=args['candidate_index'], from_=args['from'],
-            key=args.get('key'), passphrase=args.get('passphrase')
+            candidate_index=args['candidate_index'], key=args['key']
         )

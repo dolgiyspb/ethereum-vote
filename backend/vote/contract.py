@@ -11,7 +11,7 @@ class ContractDeployer:
             'data': data,
             'gasPrice': web3.eth.gasPrice,
             'chainId': 1,
-            'nonce': web3.eth.getTransactionCount(web3.eth.coinbase),
+            'nonce': web3.eth.getTransactionCount(acct.address),
             'from': acct.address,
         }
         gas = web3.eth.estimateGas(transaction)
@@ -61,6 +61,7 @@ class VoteContractInstance:
     def vote_for(self, candidate_index, key):
         acct = web3.eth.account.privateKeyToAccount(key)
         tx = self.contract.buildTransaction({'to': self.address, 'from': acct.address}).VoteFor(candidate_index)
+        tx['nonce'] = web3.eth.getTransactionCount(acct.address)
         signed = acct.signTransaction(tx)
         tx_hash = web3.eth.sendRawTransaction(signed.rawTransaction)
         return {
