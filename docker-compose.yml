@@ -1,0 +1,26 @@
+backend:
+  build: ./backend
+  ports:
+    - "8888:8888"
+  volumes:
+    - .:/backend
+    - ./contracts:/contracts
+  command: python manage.py runserver -h 0.0.0.0 -p 8888
+  links:
+    - node
+
+node:
+  image: trufflesuite/ganache-cli
+  ports:
+    - "8545:8545"
+  entrypoint:
+    - node
+    - ./build/cli.node.js
+    - -n
+    - -a
+    - '1'
+#    - --personalAccount=0,1q2w3e
+#    - --personalAccount=1,1q2w3e
+#
+
+
