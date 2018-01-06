@@ -10,7 +10,7 @@ class ContractDeployer:
         transaction = {
             'data': data,
             'gasPrice': web3.eth.gasPrice,
-            'chainId': 1,
+            'chainId': web3.net.version,
             'nonce': web3.eth.getTransactionCount(acct.address),
             'from': acct.address,
         }
