@@ -2,7 +2,7 @@ from flask_restful import Resource, reqparse
 from http import HTTPStatus
 
 from vote import api_manager
-from vote.contract import deploy_vote_contract, create_vote_contract
+from vote.contract import create_vote_contract, create_vote_contract_manager
 
 key_reqraser = reqparse.RequestParser()
 key_reqraser.add_argument('key', required=True)
@@ -16,10 +16,21 @@ vote_for_reqparser.add_argument('candidate_index', type=int, required=True)
 
 @api_manager.resource('/votes')
 class Votes(Resource):
+    def get(self):
+        contracts = create_vote_contract_manager().load_all()
+        return [{'address': c.address, 'candidates': c.candidates} for c in contracts]
+
     def post(self):
         data = votes_reqparser.parse_args()
         names = data['names']
-        return deploy_vote_contract(names=names, key=data['key']), HTTPStatus.CREATED
+
+        if len(names) != 2:
+            raise NotImplementedError('Only votes with 2 candidates allowed')
+
+        return (
+            create_vote_contract_manager().deploy(args=names, key=data['key']),
+            HTTPStatus.CREATED
+        )
 
 
 @api_manager.resource('/votes/<string:contract_address>')

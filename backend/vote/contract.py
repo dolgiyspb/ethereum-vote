@@ -1,12 +1,16 @@
-from vote import web3
 from solc import compile_source
-from contextlib import contextmanager
+
+from vote.models import create_vote_contract_repo
+from vote import web3, app
 
 
-class ContractDeployer:
-    def deploy(self, contract, args, key):
+class VoteContractManager:
+    def __init__(self, contract_definition):
+        self.contract_definition = contract_definition
+
+    def deploy(self, args, key):
         acct = web3.eth.account.privateKeyToAccount(key)
-        data = contract._encode_constructor_data(args=args)
+        data = self.contract_definition._encode_constructor_data(args=args)
         transaction = {
             'data': data,
             'gasPrice': web3.eth.gasPrice,
@@ -20,37 +24,33 @@ class ContractDeployer:
         signed = acct.signTransaction(transaction)
         tx_hash = web3.eth.sendRawTransaction(signed.rawTransaction)
         tx_receipt = web3.eth.getTransactionReceipt(tx_hash)
+        address = tx_receipt['contractAddress']
+        create_vote_contract_repo().create(address)
         return {
-            'address': tx_receipt['contractAddress'],
+            'address': address,
             'tx_hash': tx_hash,
         }
 
+    def load_all(self):
+        return [
+            VoteContract(address=contract.address, contract_definition=self.contract_definition)
+            for contract in create_vote_contract_repo().all()
+        ]
 
-class VoteContractSource:
-    def __init__(self, source_path):
-        with open(source_path) as f:
-            source_code = f.read()
-        compiled_sol = compile_source(source_code)
-        contract_interface = compiled_sol['<stdin>:Vote']
-        self.contract = web3.eth.contract(abi=contract_interface['abi'], bytecode=contract_interface['bin'])
 
-@contextmanager
-def unlock_account(account, passphrase):
-    web3.personal.unlockAccount(account , passphrase)
-    yield
-    web3.personal.lockAccount(account)
+class VoteContract:
 
-class VoteContractInstance:
-    def __init__(self, address, contract):
-        self.contract = contract
+    def __init__(self, address, contract_definition):
+        self.contract_definition = contract_definition
         self.address = address
 
+    @property
     def candidates(self):
-        return self.contract.call({'to': self.address}).Candidates()
+        return self.contract_definition.call({'to': self.address}).Candidates()
 
     def results(self):
-        first, second = self.contract.call({'to': self.address}).Candidates()
-        for_first, for_second, against_all = self.contract.call({'to': self.address}).GetResults()
+        first, second = self.candidates
+        for_first, for_second, against_all = self.contract_definition.call({'to': self.address}).GetResults()
         make_vote_desc = lambda _name, _votes: {'name': _name, 'votes': _votes}
         return [
             make_vote_desc(name, votes) for name, votes in (
@@ -59,18 +59,15 @@ class VoteContractInstance:
         ]
 
     def vote_for(self, candidate_index, key):
-        acct = web3.eth.account.privateKeyToAccount(key)
-        tx = self.contract.buildTransaction({'to': self.address, 'from': acct.address}).VoteFor(candidate_index)
-        tx['nonce'] = web3.eth.getTransactionCount(acct.address)
-        signed = acct.signTransaction(tx)
-        tx_hash = web3.eth.sendRawTransaction(signed.rawTransaction)
-        return {
-            'tx_hash': tx_hash,
-        }
+        return self._make_signed_call('VoteFor', key, candidate_index)
 
     def close(self, key):
+        return self._make_signed_call('Close', key)
+
+    def _make_signed_call(self, method_name, key, *args):
         acct = web3.eth.account.privateKeyToAccount(key)
-        tx = self.contract.buildTransaction({'to': self.address, 'from': acct.address}).Close()
+        method = getattr(self.contract_definition.buildTransaction({'to': self.address, 'from': acct.address}), method_name)
+        tx = method(*args)
         tx['nonce'] = web3.eth.getTransactionCount(acct.address)
         signed = acct.signTransaction(tx)
         tx_hash = web3.eth.sendRawTransaction(signed.rawTransaction)
@@ -78,19 +75,20 @@ class VoteContractInstance:
             'tx_hash': tx_hash,
         }
 
-def create_vote_contract_source():
-    return VoteContractSource(
-        source_path='/contracts/Vote.sol'
-    )
+
+def create_vote_contract_definition():
+    with open(app.config['VOTE_CONTRACT_SOURCE_PATH']) as f:
+        source_code = f.read()
+    compiled_sol = compile_source(source_code)
+    contract_interface = compiled_sol['<stdin>:Vote']
+    return web3.eth.contract(abi=contract_interface['abi'], bytecode=contract_interface['bin'])
+
 
 def create_vote_contract(address):
-    return VoteContractInstance(
+    return VoteContract(
         address=address,
-        contract=create_vote_contract_source().contract
+        contract_definition=create_vote_contract_definition()
     )
 
-def deploy_vote_contract(names, key):
-    if len(names) != 2:
-        raise NotImplementedError('Only votes with 2 candidates allowed')
-
-    return ContractDeployer().deploy(contract=create_vote_contract_source().contract, args=names, key=key)
+def create_vote_contract_manager():
+    return VoteContractManager(create_vote_contract_definition())

@@ -8,3 +8,5 @@ RESTFUL_JSON = {
 }
 
 SQLALCHEMY_DATABASE_URI = 'postgresql://postgres:mysecretpassword@db/postgres'
+
+VOTE_CONTRACT_SOURCE_PATH = '/contracts/Vote.sol'
