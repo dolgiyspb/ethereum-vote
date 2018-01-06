@@ -8,6 +8,7 @@ backend:
   command: python manage.py runserver -h 0.0.0.0 -p 8888
   links:
     - node
+    - db
 
 node:
   image: trufflesuite/ganache-cli
@@ -19,8 +20,8 @@ node:
     - -n
     - -a
     - '10'
-#    - --personalAccount=0,1q2w3e
-#    - --personalAccount=1,1q2w3e
-#
 
-
+db:
+    image: postgres
+    environment:
+      - POSTGRES_PASSWORD=mysecretpassword
