@@ -1,6 +1,7 @@
 from flask import Flask
 
 from flask_restful import Api
+from flask_sqlalchemy import SQLAlchemy
 from web3 import Web3, HTTPProvider
 
 
@@ -12,4 +13,6 @@ api_manager = Api(app)
 
 web3 = Web3(HTTPProvider(app.config['NODE_ADDRESS']))
 
-from vote import api
+db = SQLAlchemy(app)
+
+from vote import api, models
