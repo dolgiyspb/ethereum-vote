@@ -38,4 +38,9 @@ contract Vote {
         return (candidates[0].name, candidates[1].name);
     }
 
+    function Close() public {
+        require(msg.sender == owner);
+        selfdestruct(owner);
+    }
+
 }

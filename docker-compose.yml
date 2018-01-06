@@ -18,7 +18,7 @@ node:
     - ./build/cli.node.js
     - -n
     - -a
-    - '1'
+    - '10'
 #    - --personalAccount=0,1q2w3e
 #    - --personalAccount=1,1q2w3e
 #

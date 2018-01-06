@@ -68,6 +68,16 @@ class VoteContractInstance:
             'tx_hash': tx_hash,
         }
 
+    def close(self, key):
+        acct = web3.eth.account.privateKeyToAccount(key)
+        tx = self.contract.buildTransaction({'to': self.address, 'from': acct.address}).Close()
+        tx['nonce'] = web3.eth.getTransactionCount(acct.address)
+        signed = acct.signTransaction(tx)
+        tx_hash = web3.eth.sendRawTransaction(signed.rawTransaction)
+        return {
+            'tx_hash': tx_hash,
+        }
+
 def create_vote_contract_source():
     return VoteContractSource(
         source_path='/contracts/Vote.sol'
