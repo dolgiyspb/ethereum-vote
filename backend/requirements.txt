@@ -1,0 +1,6 @@
+web3==4.0.0b5
+Flask
+Flask-Script
+Flask-Restful
+marshmallow
+py-solc
