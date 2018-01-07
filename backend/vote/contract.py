@@ -49,12 +49,12 @@ class VoteContract:
 
     @property
     def candidates(self):
-        return self.contract_definition.call({'to': self.address}).Candidates()
+        return self._call('Candidates')
 
     @property
     def results(self):
         first, second = self.candidates
-        for_first, for_second, against_all = self.contract_definition.call({'to': self.address}).GetResults()
+        for_first, for_second, against_all = self._call('GetResults')
         make_vote_desc = lambda _name, _votes: {'name': _name, 'votes': _votes}
         return [
             make_vote_desc(name, votes) for name, votes in (
@@ -63,16 +63,20 @@ class VoteContract:
         ]
 
     @property
+    def closed(self):
+        return self._call('closed')
+
+    @property
     def owner(self):
-        return self.contract_definition.call({'to': self.address}).owner()
+        return self._call('owner')
 
     def vote_for(self, candidate_index, key):
-        return self._make_signed_call('VoteFor', key, candidate_index)
+        return self._signed_call('VoteFor', key, candidate_index)
 
     def close(self, key):
-        return self._make_signed_call('Close', key)
+        return self._signed_call('Close', key)
 
-    def _make_signed_call(self, method_name, key, *args):
+    def _signed_call(self, method_name, key, *args):
         acct = web3.eth.account.privateKeyToAccount(key)
         method = getattr(self.contract_definition.buildTransaction({'to': self.address, 'from': acct.address}), method_name)
         tx = method(*args)
@@ -83,6 +87,9 @@ class VoteContract:
             'tx_hash': tx_hash,
         }
 
+    def _call(self, method_name, *args):
+        method = getattr(self.contract_definition.call({'to': self.address}), method_name)
+        return method(*args)
 
 def create_vote_contract_definition():
     with open(app.config['VOTE_CONTRACT_SOURCE_PATH']) as f:

@@ -18,7 +18,7 @@ vote_for_reqparser.add_argument('candidate_index', type=int, required=True)
 class Votes(Resource):
     def get(self):
         contracts = create_vote_contract_manager().load_all()
-        return [{'address': c.address, 'candidates': c.candidates} for c in contracts]
+        return [{'address': c.address, 'candidates': c.candidates, 'closed': c.closed} for c in contracts]
 
     def post(self):
         data = votes_reqparser.parse_args()
@@ -39,7 +39,8 @@ class Vote(Resource):
         contract = create_vote_contract_manager().load(address=contract_address)
         return {
             'results': contract.results,
-            'owner': contract.owner
+            'owner': contract.owner,
+            'closed': contract.closed
         }
 
     def delete(self, contract_address):

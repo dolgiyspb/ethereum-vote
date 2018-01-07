@@ -11,6 +11,7 @@ contract Vote {
     }
 
     address public owner;
+    bool public closed;
 
     mapping(address => Voter) voters;
     Candidate[3] candidates;
@@ -23,6 +24,7 @@ contract Vote {
     }
 
     function VoteFor(uint index) public {
+        require(!closed);
         require(index < candidates.length - 1);
         Voter voter = voters[msg.sender];
         require(!voter.voted);
@@ -40,7 +42,7 @@ contract Vote {
 
     function Close() public {
         require(msg.sender == owner);
-        selfdestruct(owner);
+        closed = true;
     }
 
 }
