@@ -25,7 +25,7 @@ contract Vote {
 
     function VoteFor(uint index) public {
         require(!closed);
-        require(index < candidates.length - 1);
+        require(index < candidates.length);
         Voter voter = voters[msg.sender];
         require(!voter.voted);
         candidates[index].votesCount++;
