@@ -1,5 +1,6 @@
 from flask_restful import Resource, reqparse
 from http import HTTPStatus
+from functools import wraps
 
 from vote import api_manager
 from vote.contract import create_vote_contract_manager
@@ -13,9 +14,20 @@ votes_reqparser.add_argument('names', required=True, action='append')
 vote_for_reqparser = key_reqraser.copy()
 vote_for_reqparser.add_argument('candidate_index', type=int, required=True)
 
+def error_handler(fn):
+    @wraps(fn)
+    def wrapper(*args, **kwargs):
+        try:
+            return fn(*args, **kwargs)
+        except Exception as exc:
+            return {'message': str(exc)}, HTTPStatus.BAD_REQUEST
+
+    return wrapper
 
 @api_manager.resource('/votes')
 class Votes(Resource):
+    decorators = [error_handler]
+    
     def get(self):
         contracts = create_vote_contract_manager().load_all()
         return [{'address': c.address, 'candidates': c.candidates, 'closed': c.closed} for c in contracts]
@@ -35,6 +47,8 @@ class Votes(Resource):
 
 @api_manager.resource('/votes/<string:contract_address>')
 class Vote(Resource):
+    decorators = [error_handler]
+
     def get(self, contract_address):
         contract = create_vote_contract_manager().load(address=contract_address)
         return {
@@ -50,8 +64,11 @@ class Vote(Resource):
 
 @api_manager.resource('/votes/<string:contract_address>/vote-for')
 class VoteFor(Resource):
+    decorators = [error_handler]
+
     def post(self, contract_address):
         args = vote_for_reqparser.parse_args()
         return create_vote_contract_manager().load(address=contract_address).vote_for(
             candidate_index=args['candidate_index'], key=args['key']
         )
+
