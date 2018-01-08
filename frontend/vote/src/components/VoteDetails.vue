@@ -1,8 +1,33 @@
 <template>
   <b-container class="bv-example-row">
-    <b-jumbotron :header="header" lead="Bootstrap 4 Components for Vue.js 2" >
-      <p>For more information visit website</p>
-      <b-btn variant="primary" href="#">More Info</b-btn>
+    <b-jumbotron :header="header" :lead="address" v-if="results">
+      <p>Для голосования введите свой приватный ключ и выберите один из трех вариантов</p>
+      <b-container>
+        <b-row>
+          <b-col sm="3"><label for="key">Приватный ключ:</label></b-col>
+          <b-col sm="9">
+            <b-form-input
+              id="key"
+              v-model="key"
+              type="text"
+              placeholder="0000000000000000000000000000000000000000000000000000000000000000"
+              v-validate="'private-key'"
+              name="key"
+              :state="!errors.has('key')"
+              aria-describedby="keyError"
+            />
+            <b-form-invalid-feedback id="keyError">
+              {{ errors.first('key') }}
+            </b-form-invalid-feedback>
+          </b-col>
+        </b-row>
+        <b-row>
+          <b-col  v-for="(value, index) in variants" :key="value" sm="4">
+            <b-button @click="vote_for(index)" variant="primary">{{value}}</b-button>
+          </b-col>
+        </b-row>
+      </b-container>
+      <chartjs-bar :labels="variants" :data="chart_data" datalabel="Количество голосов"></chartjs-bar>
     </b-jumbotron>
   </b-container>
 </template>
@@ -12,33 +37,75 @@
         name: "VoteDetails",
         data: function () {
           return {
-            "results": [
-              {
-                "name": "c1",
-                "votes": 0
-              },
-              {
-                "name": "c2",
-                "votes": 0
-              },
-              {
-                "name": "against_all",
-                "votes": 0
-              }
-            ],
-            "owner": "0x844Fbe41E055c9129dF7dF9e15ca276B2d6C5ee1",
-            "closed": false
+            "results": [],
+            "owner": "",
+            "closed": false,
+            "key": ""
           }
         },
         computed: {
           header: function () {
-            var results = this.results
-            return `${results[0]['name']} VS ${results[1]['name']}`
+            const results = this.results
+            if (results.length) return `${results[0]['name']} vs ${results[1]['name']}`
+          },
+          address: function() {
+            return `Адрес контракта в сети Ethereum: ${this.$route.params.address}`
+          },
+          variants: function () {
+            if (this.results.length) return [this.results[0]['name'], this.results[1]['name'], 'Против всех']
+          },
+          chart_data: function () {
+            return this.results.map((r) => r['votes'])
           }
-        }
+        },
+      methods: {
+        _path: function () {
+          return `votes/${this.$route.params.address}`;
+        },
+        _vote_for_path: function () {
+          return `${this._path()}/vote-for`
+        },
+        fetch_data: function () {
+          this.$http.get(this._path()).then(result => {
+            let data = result.data
+            this.results = data.results
+            this.votes = data.votes
+            this.owner = data.owner
+          }, error => {
+            console.error(error)
+          });
+        },
+        vote_for: function (index) {
+            this.$http.post(
+              this._vote_for_path(), {"candidate_index": index, "key": this.key}
+              ).then(result => {
+                console.log(result)
+            }, result => {
+                console.log(`Error: ${result}`)
+            })
+          }
+      },
+
+      created(){
+        this.fetch_data()
+        this.$validator.extend('private-key', {
+          getMessage: field => 'Некорректный формат приватного ключа',
+          validate: value => {
+            if (value === '0000000000000000000000000000000000000000000000000000000000000000') return false
+            let rex = /^[0-9A-F]{64}$/g
+            return rex.test(value.toUpperCase())
+          }
+        })
+      },
+
+      watch: {
+        '$route': 'fetchData'
+      },
     }
 </script>
 
 <style scoped>
-
+.row {
+  margin-bottom: 10px;
+}
 </style>

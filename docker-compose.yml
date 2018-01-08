@@ -14,12 +14,15 @@ node:
   image: trufflesuite/ganache-cli
   ports:
     - "8545:8545"
+  volumes:
+    - ./.ethereum_data:/ethereum_data
   entrypoint:
     - node
     - ./build/cli.node.js
     - -n
     - -a
     - '10'
+    - --db=/ethereum_data
 
 db:
     image: postgres
@@ -33,5 +36,15 @@ web:
    - ./frontend/vote:/var/www/ethereum
   links:
    - backend
+   - frontend
   ports:
    - "8080:80"
+
+frontend:
+  image: "node:8"
+  working_dir: /home/node/app
+  volumes:
+    - ./frontend/vote:/home/node/app
+  expose:
+    - "8080"
+  command: "npm start"

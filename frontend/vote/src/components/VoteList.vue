@@ -54,7 +54,7 @@
         ],
       }
     },
-    imounted() {
+    mounted() {
       this.$http.get("votes").then(result => {
         console.log(result)
         this.votes = result.data
