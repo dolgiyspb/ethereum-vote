@@ -1,8 +1,9 @@
 <template>
   <b-container>
     <b-jumbotron :header="header" :lead="address" v-if="results">
-      <p>Для голосования введите свой приватный ключ и выберите один из трех вариантов</p>
-      <b-container>
+      <p v-if="!closed">Для голосования введите свой приватный ключ и выберите один из трех вариантов</p>
+      <p v-if="closed">Это голосование уже закрыто. Можно смотреть, но все уже решено.</p>
+      <b-container v-if="!closed">
         <b-row>
           <b-col sm="3"><label for="key">Приватный ключ:</label></b-col>
           <b-col sm="9">
@@ -26,8 +27,25 @@
             <b-button @click="vote_for(index)" variant="primary">{{value}}</b-button>
           </b-col>
         </b-row>
+        <b-row>
+        <b-btn @click="showCollapse = !showCollapse"
+               :class="showCollapse ? 'collapsed' : null"
+               aria-controls="collapse4"
+               :aria-expanded="showCollapse ? 'true' : 'false'">
+          Дополнительно
+        </b-btn>
+
+        </b-row>
+        <b-row>
+          <b-collapse class="mt-2" v-model="showCollapse" id="collapse4">
+            <p>Если вы создали это голосование, то вы можете его закрыть.</p>
+            <p>Для этого введите укажите свой приватный ключ и нажмите ниже.</p>
+            <b-button @click="close_vote" variant="primary">Закрыть голосование</b-button>
+          </b-collapse>
+        </b-row>
       </b-container>
       <chartjs-bar :labels="variants" :data="chart_data":bind="true" datalabel="Количество голосов"></chartjs-bar>
+      <b-link :to="{'name': 'VoteList'}">На главную</b-link>
     </b-jumbotron>
     <b-modal ref="successConfiramtion" hide-footer title="Голос учтен" size="lg">
       <div class="d-block text-center">
@@ -48,11 +66,12 @@
     name: 'VoteDetails',
     data: function () {
       return {
-        'results': [],
-        'owner': '',
-        'closed': false,
-        'key': '',
-        'last_tx_hash':''
+        results: [],
+        owner: '',
+        closed: false,
+        key: '',
+        last_tx_hash:'',
+        showCollapse: false
       }
     },
     computed: {
@@ -88,6 +107,7 @@
           this.results = data.results
           this.votes = data.votes
           this.owner = data.owner
+          this.closed = data.closed
         }, error => {
           console.error(error)
         });
@@ -98,6 +118,15 @@
         ).then(result => {
           this.last_tx_hash = result.data.tx_hash
           this.showModal()
+          this.fetch_data()
+        }, result => {
+          console.log(`Error: ${result}`)
+        })
+      },
+      close_vote() {
+        this.$http.delete(
+          this._path(), {body: JSON.stringify({key: this.key})}
+        ).then(result => {
           this.fetch_data()
         }, result => {
           console.log(`Error: ${result}`)
