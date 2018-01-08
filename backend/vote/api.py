@@ -52,6 +52,6 @@ class Vote(Resource):
 class VoteFor(Resource):
     def post(self, contract_address):
         args = vote_for_reqparser.parse_args()
-        create_vote_contract_manager().load(address=contract_address).vote_for(
+        return create_vote_contract_manager().load(address=contract_address).vote_for(
             candidate_index=args['candidate_index'], key=args['key']
         )

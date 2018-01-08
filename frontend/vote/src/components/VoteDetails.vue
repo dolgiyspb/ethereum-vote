@@ -27,85 +27,110 @@
           </b-col>
         </b-row>
       </b-container>
-      <chartjs-bar :labels="variants" :data="chart_data" datalabel="Количество голосов"></chartjs-bar>
+      <chartjs-bar :labels="variants" :data="chart_data":bind="true" datalabel="Количество голосов"></chartjs-bar>
     </b-jumbotron>
+    <b-modal ref="successConfiramtion" hide-footer title="Голос учтен" size="lg">
+      <div class="d-block text-center">
+        <h3>Спасибо за участие!</h3>
+        <b-container>
+          <b-row>
+            <b-col sm="3">Хэш транзакции:</b-col><b-col sm="9">{{last_tx_hash}}</b-col>
+          </b-row>
+        </b-container>
+      </div>
+      <b-btn class="mt-3" variant="outline-danger" block @click="hideModal">Закрыть</b-btn>
+    </b-modal>
   </b-container>
 </template>
 
 <script>
-    export default {
-        name: "VoteDetails",
-        data: function () {
-          return {
-            "results": [],
-            "owner": "",
-            "closed": false,
-            "key": ""
-          }
-        },
-        computed: {
-          header: function () {
-            const results = this.results
-            if (results.length) return `${results[0]['name']} vs ${results[1]['name']}`
-          },
-          address: function() {
-            return `Адрес контракта в сети Ethereum: ${this.$route.params.address}`
-          },
-          variants: function () {
-            if (this.results.length) return [this.results[0]['name'], this.results[1]['name'], 'Против всех']
-          },
-          chart_data: function () {
-            return this.results.map((r) => r['votes'])
-          }
-        },
-      methods: {
-        _path: function () {
-          return `votes/${this.$route.params.address}`;
-        },
-        _vote_for_path: function () {
-          return `${this._path()}/vote-for`
-        },
-        fetch_data: function () {
-          this.$http.get(this._path()).then(result => {
-            let data = result.data
-            this.results = data.results
-            this.votes = data.votes
-            this.owner = data.owner
-          }, error => {
-            console.error(error)
-          });
-        },
-        vote_for: function (index) {
-            this.$http.post(
-              this._vote_for_path(), {"candidate_index": index, "key": this.key}
-              ).then(result => {
-                console.log(result)
-            }, result => {
-                console.log(`Error: ${result}`)
-            })
-          }
+  export default {
+    name: 'VoteDetails',
+    data: function () {
+      return {
+        'results': [],
+        'owner': '',
+        'closed': false,
+        'key': '',
+        'last_tx_hash':''
+      }
+    },
+    computed: {
+      header: function () {
+        const results = this.results
+        if (results.length) return `${results[0]['name']} vs ${results[1]['name']}`
       },
-
-      created(){
-        this.fetch_data()
-        this.$validator.extend('private-key', {
-          getMessage: field => 'Некорректный формат приватного ключа',
-          validate: value => {
-            if (value === '0000000000000000000000000000000000000000000000000000000000000000') return false
-            let rex = /^[0-9A-F]{64}$/g
-            return rex.test(value.toUpperCase())
-          }
+      address: function() {
+        return `Адрес контракта в сети Ethereum: ${this.$route.params.address}`
+      },
+      variants: function () {
+        const results = this.results
+        if (results.length) {
+          return [results[0]['name'], results[1]['name'], 'Против всех']
+        } else {
+          return []
+        }
+      },
+      chart_data: function () {
+        return this.results.map((r) => r['votes'])
+      }
+    },
+    methods: {
+      _path: function () {
+        return `votes/${this.$route.params.address}`;
+      },
+      _vote_for_path: function () {
+        return `${this._path()}/vote-for`
+      },
+      fetch_data: function () {
+        this.$http.get(this._path()).then(result => {
+          let data = result.data
+          this.results = data.results
+          this.votes = data.votes
+          this.owner = data.owner
+        }, error => {
+          console.error(error)
+        });
+      },
+      vote_for: function (index) {
+        this.$http.post(
+          this._vote_for_path(), {"candidate_index": index, "key": this.key}
+        ).then(result => {
+          this.last_tx_hash = result.data.tx_hash
+          this.showModal()
+          this.fetch_data()
+        }, result => {
+          console.log(`Error: ${result}`)
         })
       },
-
-      watch: {
-        '$route': 'fetchData'
+      showModal () {
+        this.$refs.successConfiramtion.show()
       },
-    }
+      hideModal () {
+        this.$refs.successConfiramtion.hide()
+      }
+    },
+
+    created(){
+      this.fetch_data()
+      this.$validator.extend('private-key', {
+        getMessage: field => 'Некорректный формат приватного ключа',
+        validate: value => {
+          if (value === '0000000000000000000000000000000000000000000000000000000000000000') return false
+          let rex = /^[0-9A-F]{64}$/g
+          return rex.test(value.toUpperCase())
+        }
+      })
+    },
+
+    watch: {
+      '$route': 'fetchData'
+    },
+  }
 </script>
 
 <style scoped>
-.row {
-  margin-bottom: 10px;
-}
+  .row {
+    margin-bottom: 10px;
+  }
 </style>
