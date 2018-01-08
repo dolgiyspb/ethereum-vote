@@ -17,7 +17,7 @@
           Здесь пока ничего нет. Можете подождать пока повится какое-нибудь голосование.
         </p>
         <p class="card-text mt-2">
-          Ну или  <b-button variant="primary">Создать новое</b-button>
+          Ну или  <router-link to="/contract/create"><b-button variant="primary">Создать новое</b-button></router-link>
         </p>
       </b-card>
       <b-card header="<b>Закрытые голосования</b>">

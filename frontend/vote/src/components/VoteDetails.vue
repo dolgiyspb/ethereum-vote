@@ -1,5 +1,5 @@
 <template>
-  <b-container class="bv-example-row">
+  <b-container>
     <b-jumbotron :header="header" :lead="address" v-if="results">
       <p>Для голосования введите свой приватный ключ и выберите один из трех вариантов</p>
       <b-container>
