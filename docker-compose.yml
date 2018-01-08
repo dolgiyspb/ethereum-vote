@@ -31,5 +31,7 @@ web:
   volumes:
    - ./frontend/ethereum-frontend.conf:/etc/nginx/conf.d/default.conf
    - ./frontend/vote:/var/www/ethereum
+  links:
+   - backend
   ports:
    - "8080:80"
