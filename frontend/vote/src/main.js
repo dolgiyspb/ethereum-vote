@@ -25,6 +25,16 @@ Vue.use(window.VueCharts)
 
 Vue.http.options.root = '/api';
 
+Vue.http.interceptors.push((req, next) => {
+  next((res) => {
+    console.log(res)
+    if (!res.ok) {
+      alert('Что-то пошло не так, посмотрите логи')
+    }
+    return res
+  })
+})
+
 /* eslint-disable no-new */
 new Vue({
   el: '#app',

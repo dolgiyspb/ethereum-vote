@@ -27,7 +27,7 @@ def error_handler(fn):
 @api_manager.resource('/votes')
 class Votes(Resource):
     decorators = [error_handler]
-    
+
     def get(self):
         contracts = create_vote_contract_manager().load_all()
         return [{'address': c.address, 'candidates': c.candidates, 'closed': c.closed} for c in contracts]
