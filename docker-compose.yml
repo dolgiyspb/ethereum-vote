@@ -5,7 +5,7 @@ backend:
   volumes:
     - ./backend:/backend
     - ./contracts:/contracts
-  command: python manage.py runserver -h 0.0.0.0 -p 8888
+  command: bash -c "python manage.py db upgrade && python manage.py runserver -h 0.0.0.0 -p 8888"
   links:
     - node
     - db
