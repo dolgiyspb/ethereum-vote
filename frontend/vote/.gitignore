@@ -1,5 +1,5 @@
 .DS_Store
-node_modules/*
+node_modules/
 /dist/
 npm-debug.log*
 yarn-debug.log*
@@ -12,7 +12,3 @@ yarn-error.log*
 *.ntvs*
 *.njsproj
 *.sln
-
-
-# workaround for https://github.com/webpack/webpack-dev-server/issues/1259 , i need to save worked version
-!node_modules/webpack-dev-server
