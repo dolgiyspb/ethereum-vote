@@ -47,4 +47,4 @@ frontend:
     - ./frontend/vote:/home/node/app
   expose:
     - "8080"
-  command: "npm start"
+  command: bash -c "npm install && npm start"
